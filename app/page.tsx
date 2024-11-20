@@ -1,101 +1,118 @@
-import Image from "next/image";
+"use client";
+
+import { createRoot } from "react-dom/client";
+import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+
+import { useRef, useEffect, useState } from "react";
+import mapboxgl, { LngLatLike } from "mapbox-gl";
+import { VehiclePosition } from "./api/api";
+
+import "mapbox-gl/dist/mapbox-gl.css";
+import { Marker } from "mapbox-gl";
+
+const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
+
+const INITIAL_ZOOM = 12.76;
+
+const getLineVehiclePosition = async () => {
+  try {
+    const response = await fetch("/api/proxyVehiclePosition?hatNo=15A", {
+      method: "POST", // If you prefer, you can use GET instead
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      console.error("Error fetching vehicle position:", data.error);
+    } else {
+      console.log("Parsed JSON:", data);
+      return data;
+    }
+    return data;
+  } catch (error) {
+    console.error("Error fetching line vehicle position:", error);
+  }
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const [vehiclePositions, setVehiclePositions] = useState<VehiclePosition[]>();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  // In your frontend code
+
+  useEffect(() => {
+    getLineVehiclePosition().then((data) => {
+      setVehiclePositions(data);
+    });
+
+    mapboxgl.accessToken =
+      "pk.eyJ1IjoiaGFydW4tYmFrbGFuIiwiYSI6ImNtM3E2NDY0bjBsa28ya3NhMnM0bWpqNTYifQ.DB6xtdb0Q0HAYDW3vYkmng";
+    if (mapContainerRef.current) {
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        center: INITIAL_CENTER,
+        zoom: INITIAL_ZOOM,
+      });
+    }
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // If vehicle positions are available, add markers to the map
+    if (vehiclePositions && mapRef.current) {
+      // Remove existing markers if any
+      mapRef.current
+        ?.getSource("vehiclePositions")
+        ?.setData({ type: "FeatureCollection", features: [] });
+
+      vehiclePositions.forEach((vehicle) => {
+        const { enlem: lat, boylam: lng } = vehicle; // Assuming your VehiclePosition has lat and lng properties
+
+        // Create a new marker with an MUI icon
+        const markerElement = document.createElement("div");
+        const icon = createRoot(markerElement);
+        icon.render(
+          <DirectionsBusIcon style={{ color: "B00020" }} fontSize="large" />
+        );
+
+        new Marker(markerElement)
+          .setLngLat([parseFloat(lng), parseFloat(lat)]) // Set the position of the marker
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }) // add popups
+              .setHTML(
+                `<h3>Yon: ${vehicle.yon}</h3><h3>Son konum zamani: ${vehicle.son_konum_zamani}</h3>
+                <h3>Yakin durak kodu: ${vehicle.yakinDurakKodu}</h3>
+                <h3>Hat ad: ${vehicle.hatad}</h3>
+                <h3>Hat kodu: ${vehicle.hatkodu}</h3>
+                <h3>Guzergah kodu: ${vehicle.guzergahkodu}</h3>`
+              )
+          )
+          .addTo(mapRef.current); // Add the marker to the map
+      });
+    }
+  }, [vehiclePositions]);
+
+  const handleButtonClick = () => {
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: INITIAL_CENTER,
+        zoom: INITIAL_ZOOM,
+      });
+      console.log("Data:", vehiclePositions);
+    }
+  };
+
+  return (
+    <>
+      <button id="reset-button" onClick={handleButtonClick}>
+        Reset
+      </button>
+      <div id="map-container" ref={mapContainerRef} />
+    </>
   );
 }

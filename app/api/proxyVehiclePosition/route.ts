@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       ignoreAttributes: false, // Don't ignore attributes
       parseTagValue: true, // Parse values inside tags
       parseNodeValue: true, // Parse text content
-    } as any);
+    } as { [key: string]: boolean });
 
     const parsedXml = parser.parse(text);
 
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Error occurred while processing the request:", error);
     return NextResponse.json(
-      { error: "Internal Server Error", details: (error as any).message },
+      { error: "Internal Server Error", details: (error as Error).message },
       { status: 500 }
     );
   }

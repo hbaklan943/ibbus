@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       ignoreAttributes: false, // Don't ignore attributes
       parseTagValue: true, // Parse values inside tags
       parseNodeValue: true, // Parse text content
-    });
+    } as any);
 
     const parsedXml = parser.parse(text);
 

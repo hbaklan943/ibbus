@@ -66,9 +66,8 @@ export default function Home() {
     // If vehicle positions are available, add markers to the map
     if (vehiclePositions && mapRef.current) {
       // Remove existing markers if any
-      mapRef.current
-        ?.getSource("vehiclePositions")
-        ?.setData({ type: "FeatureCollection", features: [] });
+      const existingMarkers = document.querySelectorAll(".mapboxgl-marker");
+      existingMarkers.forEach((marker) => marker.remove());
 
       vehiclePositions.forEach((vehicle) => {
         const { enlem: lat, boylam: lng } = vehicle; // Assuming your VehiclePosition has lat and lng properties
@@ -92,7 +91,7 @@ export default function Home() {
                 <h3>Guzergah kodu: ${vehicle.guzergahkodu}</h3>`
               )
           )
-          .addTo(mapRef.current); // Add the marker to the map
+          .addTo(mapRef.current!); // Add the marker to the map
       });
     }
   }, [vehiclePositions]);

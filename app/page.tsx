@@ -13,7 +13,7 @@ import { pink } from "@mui/material/colors";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 
-const INITIAL_ZOOM = 12.76;
+const INITIAL_ZOOM = 11.1;
 
 const getLineVehiclePosition = async () => {
   try {
@@ -98,13 +98,13 @@ export default function Home() {
   }, [vehiclePositions]);
 
   const handleButtonClick = () => {
-    if (mapRef.current) {
+    /* if (mapRef.current) {
       mapRef.current.flyTo({
         center: INITIAL_CENTER,
         zoom: INITIAL_ZOOM,
       });
       console.log("Data:", vehiclePositions);
-    }
+    } */
     getLineVehiclePosition().then((data) => {
       setVehiclePositions(data);
     });

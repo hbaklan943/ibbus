@@ -105,12 +105,15 @@ export default function Home() {
       });
       console.log("Data:", vehiclePositions);
     }
+    getLineVehiclePosition().then((data) => {
+      setVehiclePositions(data);
+    });
   };
 
   return (
     <>
       <button id="reset-button" onClick={handleButtonClick}>
-        Reset
+        Reset (refresh)
       </button>
       <div id="map-container" ref={mapContainerRef} />
     </>

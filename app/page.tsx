@@ -9,6 +9,7 @@ import { VehiclePosition } from "./api/api";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
+import { pink } from "@mui/material/colors";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 
@@ -76,7 +77,7 @@ export default function Home() {
         const markerElement = document.createElement("div");
         const icon = createRoot(markerElement);
         icon.render(
-          <DirectionsBusIcon style={{ color: "B00020" }} fontSize="large" />
+          <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 40 }} />
         );
 
         new Marker(markerElement)

@@ -13,7 +13,7 @@ export type Line = {
 };
 
 export type LineList = Line[];
-export async function POST(req: Request) {
+export async function POST() {
   try {
     /* const { searchParams } = new URL(req.url);
     const hatKodu = searchParams.get("hatKodu");

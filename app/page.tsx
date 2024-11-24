@@ -3,6 +3,7 @@
 import { createRoot } from "react-dom/client";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
+import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { useRef, useEffect, useState } from "react";
@@ -155,8 +156,10 @@ export default function Home() {
 
   const handleRefreshClick = () => {
     if (selectedLine) {
+      setLoading(true);
       getLineVehiclePosition(selectedLine.SHATKODU).then((data) => {
         setVehiclePositions(data);
+        setLoading(false);
       });
     }
   };
@@ -174,12 +177,34 @@ export default function Home() {
           backgroundColor: "#000",
           boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
           fontSize: 40,
+          opacity: loading ? 0.5 : 1, // dim when loading
+          cursor: loading ? "not-allowed" : "pointer",
         }}
-        onClick={handleRefreshClick}
+        onClick={() => {
+          if (!loading) {
+            // prevent multiple clicks while loading
+            handleRefreshClick();
+          }
+        }}
       />
+      {loading && (
+        <CircularProgress
+          sx={{
+            position: "absolute",
+            zIndex: 2,
+            right: 24,
+            bottom: 24,
+            color: "white",
+            borderRadius: "50%",
+            backgroundColor: "#000",
+            boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+          }}
+        />
+      )}
       <Autocomplete
         className="line-select"
         disablePortal
+        loading={loading}
         options={lineList}
         getOptionLabel={(option: Line) => option.SHATKODU}
         isOptionEqualToValue={(option: Line, value: Line) =>

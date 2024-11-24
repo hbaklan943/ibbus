@@ -1,7 +1,10 @@
 "use client";
 
 import { createRoot } from "react-dom/client";
+
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
 
 import { useRef, useEffect, useState } from "react";
 import mapboxgl, { LngLatLike } from "mapbox-gl";
@@ -10,6 +13,8 @@ import { VehiclePosition } from "./api/api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
 import { pink } from "@mui/material/colors";
+
+import { LineList } from "./api/proxyLineList/route";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 
@@ -25,7 +30,7 @@ const getLineVehiclePosition = async () => {
     if (data.error) {
       console.error("Error fetching vehicle position:", data.error);
     } else {
-      console.log("Parsed JSON:", data);
+      //console.log("Parsed JSON:", data);
       return data;
     }
     return data;
@@ -34,14 +39,36 @@ const getLineVehiclePosition = async () => {
   }
 };
 
+const getLineList = async (): Promise<LineList | undefined> => {
+  try {
+    const response = await fetch("/api/proxyLineList", {
+      method: "POST", // If you prefer, you can use GET instead
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      console.error("Error fetching line list:", data.error);
+    } else {
+      //console.log("Parsed JSON Line List:", data);
+      return data;
+    }
+    return data;
+  } catch (error) {
+    console.error("Error fetching line list:", error);
+  }
+};
+
 export default function Home() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [vehiclePositions, setVehiclePositions] = useState<VehiclePosition[]>();
-
-  // In your frontend code
+  const [lineList, setLineList] = useState<LineList>();
 
   useEffect(() => {
+    getLineList().then((data) => {
+      setLineList(data);
+    });
+
     getLineVehiclePosition().then((data) => {
       setVehiclePositions(data);
     });

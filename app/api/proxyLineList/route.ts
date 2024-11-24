@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 const apiLineListUrl =
   "https://api.ibb.gov.tr/iett/UlasimAnaVeri/HatDurakGuzergah.asmx?wsdl";
 
-type Line = {
+export type Line = {
   HAT_UZUNLUGU: number;
   SEFER_SURESI: number;
   SHATADI: string;

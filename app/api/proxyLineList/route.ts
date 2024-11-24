@@ -4,16 +4,15 @@ import { NextResponse } from "next/server";
 const apiLineListUrl =
   "https://api.ibb.gov.tr/iett/UlasimAnaVeri/HatDurakGuzergah.asmx?wsdl";
 
-export type LineList = [
-  {
-    HAT_UZUNLUGU: number;
-    SEFER_SURESI: number;
-    SHATADI: string;
-    SHATKODU: string;
-    TARIFE: string;
-  }
-];
+type Line = {
+  HAT_UZUNLUGU: number;
+  SEFER_SURESI: number;
+  SHATADI: string;
+  SHATKODU: string;
+  TARIFE: string;
+};
 
+export type LineList = Line[];
 export async function POST(req: Request) {
   try {
     /* const { searchParams } = new URL(req.url);
@@ -75,13 +74,13 @@ export async function POST(req: Request) {
     const parsedXml = parser.parse(text);
     console.log("Parsed XML:", parsedXml["soap:Envelope"]["soap:Body"]);
 
-    const jsonResult: LineList =
+    const jsonResult =
       parsedXml["soap:Envelope"]["soap:Body"]["GetHat_jsonResponse"][
         "GetHat_jsonResult"
       ];
 
     if (jsonResult) {
-      const jsonData = jsonResult;
+      const jsonData = JSON.parse(jsonResult);
       return NextResponse.json(jsonData);
     } else {
       console.error("No JSON data found in the SOAP response.");

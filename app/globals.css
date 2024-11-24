@@ -53,9 +53,9 @@ body {
 
 #reset-button {
   position: absolute;
-  top: 12px;
+  bottom: 12px;
   z-index: 1;
-  left: 12px;
+  right: 12px;
   padding: 4px 10px;
   border-radius: 10px;
   cursor: pointer;
@@ -67,4 +67,13 @@ body {
 h3 {
   color: #000;
   margin: 0;
+}
+
+.line-select {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, -50%); /* Move it halfway back(x,y) */
+  width: 150px;
+  z-index: 1;
 }

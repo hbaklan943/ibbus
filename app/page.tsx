@@ -133,7 +133,7 @@ export default function Home() {
         const markerElement = document.createElement("div");
         const icon = createRoot(markerElement);
         icon.render(
-          <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 40 }} />
+          <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 32 }} />
         );
 
         new Marker(markerElement)

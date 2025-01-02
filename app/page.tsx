@@ -173,7 +173,7 @@ export default function Home() {
           <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 32 }} />
         );
 
-        const marker = new Marker(markerElement)
+        new Marker(markerElement)
           .setLngLat([parseFloat(lng), parseFloat(lat)])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
@@ -186,7 +186,6 @@ export default function Home() {
             )
           )
           .addTo(mapRef.current!);
-        (marker as any).markerType = "vehicle";
       });
     }
   }, [vehiclePositions]);

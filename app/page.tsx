@@ -89,6 +89,7 @@ export default function Home() {
       );
     } else {
       setError("Geolocation is not supported");
+      console.log(error);
     }
   };
 

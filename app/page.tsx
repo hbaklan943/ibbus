@@ -94,13 +94,14 @@ export default function Home() {
     }
   };
 
+  // Don't think I need this
   // Center map on geolocation
-  useEffect(() => {
+  /* useEffect(() => {
     if (geolocation && mapRef.current) {
       const { latitude, longitude } = geolocation.coords;
       mapRef.current.setCenter([longitude, latitude]);
     }
-  }, [geolocation]);
+  }, [geolocation]); */
 
   // Initialize map
   useEffect(() => {

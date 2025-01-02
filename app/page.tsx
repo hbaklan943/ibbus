@@ -75,6 +75,7 @@ export default function Home() {
   const [geolocation, setGeolocation] = useState<GeolocationPosition | null>(
     null
   );
+  const geolocationMarkerRef = useRef<Marker | null>(null);
 
   const handleGeolocation = () => {
     if (navigator.geolocation) {
@@ -111,6 +112,7 @@ export default function Home() {
         center: INITIAL_CENTER,
         zoom: INITIAL_ZOOM,
         attributionControl: false,
+        style: "mapbox://styles/mapbox/outdoors-v12?optimize=true", // optimize=true
       });
     }
 
@@ -158,7 +160,10 @@ export default function Home() {
   useEffect(() => {
     if (vehiclePositions && mapRef.current) {
       const existingMarkers = document.querySelectorAll(".mapboxgl-marker");
-      existingMarkers.forEach((marker) => marker.remove());
+      existingMarkers.forEach((marker) => marker.remove()); // Remove existing markers
+
+      // TODO: make it so that it doesn't remove geolocation marker and we don't need to refresh user location
+      handleGeolocation(); // Update geolocation marker
 
       vehiclePositions.forEach((vehicle) => {
         const { enlem: lat, boylam: lng } = vehicle;
@@ -168,7 +173,7 @@ export default function Home() {
           <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 32 }} />
         );
 
-        new Marker(markerElement)
+        const marker = new Marker(markerElement)
           .setLngLat([parseFloat(lng), parseFloat(lat)])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
@@ -181,21 +186,31 @@ export default function Home() {
             )
           )
           .addTo(mapRef.current!);
+        (marker as any).markerType = "vehicle";
       });
     }
   }, [vehiclePositions]);
 
   // Update geolocation marker
+
   useEffect(() => {
     if (geolocation && mapRef.current) {
+      // Remove the existing geolocation marker if it exists
+      if (geolocationMarkerRef.current) {
+        geolocationMarkerRef.current.remove();
+        geolocationMarkerRef.current = null; // Clear the reference
+      }
+
       const { latitude, longitude } = geolocation.coords;
+
+      // Create a new marker
       const markerElement = document.createElement("div");
       const icon = createRoot(markerElement);
       icon.render(
         <TripOriginIcon
           sx={{
             color: "#0033ff",
-            fontSize: 24,
+            fontSize: 18,
             transform: "rotate(45deg)",
             borderRadius: "50%",
             boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.35)",
@@ -203,9 +218,12 @@ export default function Home() {
         />
       );
 
-      new Marker(markerElement)
+      const marker = new Marker(markerElement)
         .setLngLat([longitude, latitude])
         .addTo(mapRef.current!);
+
+      // Store the new marker in the ref
+      geolocationMarkerRef.current = marker;
     }
   }, [geolocation]);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { createRoot } from "react-dom/client";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -13,6 +14,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
 import { pink } from "@mui/material/colors";
 import { LineList, Line } from "./api/proxyLineList/route";
+import TripOriginIcon from "@mui/icons-material/TripOrigin";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
@@ -69,6 +71,34 @@ export default function Home() {
   const [lineList, setLineList] = useState<LineList>([]);
   const [selectedLine, setSelectedLine] = useState<Line | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [geolocation, setGeolocation] = useState<GeolocationPosition | null>(
+    null
+  );
+
+  const handleGeolocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setGeolocation(position);
+        },
+        (error) => {
+          console.error("Error getting geolocation:", error);
+          setError("Error getting geolocation");
+        }
+      );
+    } else {
+      setError("Geolocation is not supported");
+    }
+  };
+
+  // Center map on geolocation
+  useEffect(() => {
+    if (geolocation && mapRef.current) {
+      const { latitude, longitude } = geolocation.coords;
+      mapRef.current.setCenter([longitude, latitude]);
+    }
+  }, [geolocation]);
 
   // Initialize map
   useEffect(() => {
@@ -154,6 +184,30 @@ export default function Home() {
     }
   }, [vehiclePositions]);
 
+  // Update geolocation marker
+  useEffect(() => {
+    if (geolocation && mapRef.current) {
+      const { latitude, longitude } = geolocation.coords;
+      const markerElement = document.createElement("div");
+      const icon = createRoot(markerElement);
+      icon.render(
+        <TripOriginIcon
+          sx={{
+            color: "#0033ff",
+            fontSize: 24,
+            transform: "rotate(45deg)",
+            borderRadius: "50%",
+            boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.35)",
+          }}
+        />
+      );
+
+      new Marker(markerElement)
+        .setLngLat([longitude, latitude])
+        .addTo(mapRef.current!);
+    }
+  }, [geolocation]);
+
   const handleRefreshClick = () => {
     if (selectedLine) {
       setLoading(true);
@@ -166,6 +220,23 @@ export default function Home() {
 
   return (
     <>
+      <MyLocationIcon
+        sx={{
+          position: "absolute",
+          zIndex: 1,
+          right: 24,
+          bottom: 80,
+          color: "white",
+          borderRadius: "50%",
+          backgroundColor: "#000",
+          boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+          fontSize: 40,
+          cursor: "pointer",
+        }}
+        onClick={() => {
+          handleGeolocation();
+        }}
+      />
       <RefreshRounded
         sx={{
           position: "absolute",

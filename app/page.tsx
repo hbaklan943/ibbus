@@ -1,7 +1,6 @@
 "use client";
 
 import { createRoot } from "react-dom/client";
-import MyLocationIcon from "@mui/icons-material/MyLocation";
 import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -14,7 +13,6 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
 import { pink } from "@mui/material/colors";
 import { LineList, Line } from "./api/proxyLineList/route";
-import TripOriginIcon from "@mui/icons-material/TripOrigin";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
@@ -71,37 +69,6 @@ export default function Home() {
   const [lineList, setLineList] = useState<LineList>([]);
   const [selectedLine, setSelectedLine] = useState<Line | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [geolocation, setGeolocation] = useState<GeolocationPosition | null>(
-    null
-  );
-  const geolocationMarkerRef = useRef<Marker | null>(null);
-
-  const handleGeolocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setGeolocation(position);
-        },
-        (error) => {
-          console.error("Error getting geolocation:", error);
-          setError("Error getting geolocation");
-        }
-      );
-    } else {
-      setError("Geolocation is not supported");
-      console.log(error);
-    }
-  };
-
-  // Don't think I need this
-  // Center map on geolocation
-  /* useEffect(() => {
-    if (geolocation && mapRef.current) {
-      const { latitude, longitude } = geolocation.coords;
-      mapRef.current.setCenter([longitude, latitude]);
-    }
-  }, [geolocation]); */
 
   // Initialize map
   useEffect(() => {
@@ -173,11 +140,8 @@ export default function Home() {
   // Update markers when vehicle positions change
   useEffect(() => {
     if (vehiclePositions && mapRef.current) {
-      const existingMarkers = document.querySelectorAll(".mapboxgl-marker");
+      const existingMarkers = document.querySelectorAll(".vehicle-marker");
       existingMarkers.forEach((marker) => marker.remove()); // Remove existing markers
-
-      // TODO: make it so that it doesn't remove geolocation marker and we don't need to refresh user location
-      handleGeolocation(); // Update geolocation marker
 
       vehiclePositions.forEach((vehicle) => {
         const { enlem: lat, boylam: lng } = vehicle;
@@ -187,7 +151,10 @@ export default function Home() {
           <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 32 }} />
         );
 
-        new Marker(markerElement)
+        new Marker({
+          className: "vehicle-marker", // oh yeah
+          element: markerElement,
+        })
           .setLngLat([parseFloat(lng), parseFloat(lat)])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
@@ -204,42 +171,6 @@ export default function Home() {
     }
   }, [vehiclePositions]);
 
-  // Update geolocation marker
-
-  useEffect(() => {
-    if (geolocation && mapRef.current) {
-      // Remove the existing geolocation marker if it exists
-      if (geolocationMarkerRef.current) {
-        geolocationMarkerRef.current.remove();
-        geolocationMarkerRef.current = null; // Clear the reference
-      }
-
-      const { latitude, longitude } = geolocation.coords;
-
-      // Create a new marker
-      const markerElement = document.createElement("div");
-      const icon = createRoot(markerElement);
-      icon.render(
-        <TripOriginIcon
-          sx={{
-            color: "#0033ff",
-            fontSize: 18,
-            transform: "rotate(45deg)",
-            borderRadius: "50%",
-            boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.35)",
-          }}
-        />
-      );
-
-      const marker = new Marker(markerElement)
-        .setLngLat([longitude, latitude])
-        .addTo(mapRef.current!);
-
-      // Store the new marker in the ref
-      geolocationMarkerRef.current = marker;
-    }
-  }, [geolocation]);
-
   const handleRefreshClick = () => {
     if (selectedLine) {
       setLoading(true);
@@ -252,23 +183,6 @@ export default function Home() {
 
   return (
     <>
-      <MyLocationIcon
-        sx={{
-          position: "absolute",
-          zIndex: 1,
-          right: 24,
-          bottom: 80,
-          color: "white",
-          borderRadius: "50%",
-          backgroundColor: "#000",
-          boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
-          fontSize: 40,
-          cursor: "pointer",
-        }}
-        onClick={() => {
-          handleGeolocation();
-        }}
-      />
       <RefreshRounded
         sx={{
           position: "absolute",

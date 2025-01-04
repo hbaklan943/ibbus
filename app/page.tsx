@@ -117,6 +117,19 @@ export default function Home() {
       });
     }
 
+    // Add geolocate control to the map.
+    if (mapRef.current) {
+      mapRef.current.addControl(
+        new mapboxgl.GeolocateControl({
+          positionOptions: {
+            enableHighAccuracy: true,
+          },
+          trackUserLocation: true,
+          showUserHeading: true,
+        })
+      );
+    }
+
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();

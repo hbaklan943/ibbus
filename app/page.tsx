@@ -251,8 +251,9 @@ export default function Home() {
                 color: "#000",
                 fontFamily: "monospace",
                 fontWeight: "bold",
+                paddingY: "1px",
                 "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#000",
+                  borderColor: "#ec407a",
                   borderWidth: "2px",
                 },
               },

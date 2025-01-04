@@ -67,7 +67,13 @@ export default function Home() {
     []
   );
   const [lineList, setLineList] = useState<LineList>([]);
-  const [selectedLine, setSelectedLine] = useState<Line | null>(null);
+  const [selectedLine, setSelectedLine] = useState<Line>({
+    HAT_UZUNLUGU: 0,
+    SEFER_SURESI: 0,
+    SHATADI: "Hat Adı",
+    SHATKODU: "",
+    TARIFE: "0",
+  });
   const [loading, setLoading] = useState(false);
 
   // Initialize map
@@ -127,7 +133,7 @@ export default function Home() {
   // Fetch vehicle positions when selected line changes
   useEffect(() => {
     const fetchVehiclePositions = async () => {
-      if (selectedLine) {
+      if (selectedLine && selectedLine.SHATKODU) {
         setLoading(true);
         try {
           const data = await getLineVehiclePosition(selectedLine.SHATKODU);
@@ -231,8 +237,9 @@ export default function Home() {
         isOptionEqualToValue={(option: Line, value: Line) =>
           option.SHATKODU === value.SHATKODU
         }
+        disableClearable={true}
         value={selectedLine}
-        onChange={(event, value: Line | null) => {
+        onChange={(event, value: Line) => {
           setSelectedLine(value);
         }}
         renderInput={(params) => (

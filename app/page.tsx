@@ -80,7 +80,7 @@ export default function Home() {
         center: INITIAL_CENTER,
         zoom: INITIAL_ZOOM,
         attributionControl: false,
-        style: "mapbox://styles/mapbox/outdoors-v12?optimize=true", // optimize=true
+        style: "mapbox://styles/mapbox/streets-v12?optimize=true", // optimize=true
       });
     }
 

@@ -85,17 +85,21 @@ export default function Home() {
     }
 
     // Add geolocate control to the map.
+    const geolocate = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true,
+      showUserHeading: true,
+    });
+
     if (mapRef.current) {
-      mapRef.current.addControl(
-        new mapboxgl.GeolocateControl({
-          positionOptions: {
-            enableHighAccuracy: true,
-          },
-          trackUserLocation: true,
-          showUserHeading: true,
-        })
-      );
+      mapRef.current.addControl(geolocate);
     }
+
+    mapRef.current?.on("load", () => {
+      geolocate.trigger();
+    });
 
     return () => {
       if (mapRef.current) {

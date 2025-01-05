@@ -71,9 +71,24 @@ h3 {
 }
 
 .line-select {
+  width: 110px;
+}
+
+.selections {
+  display: flex;
+  flex-direction: column;
   position: absolute;
   top: 50px;
   right: 12px;
-  width: 110px;
+  width: 150px;
   z-index: 1;
+  gap: 5px;
+  align-items: end;
+}
+
+.selection {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
 }

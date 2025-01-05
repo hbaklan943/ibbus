@@ -13,10 +13,14 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
 import { pink } from "@mui/material/colors";
 import { LineList, Line } from "./api/proxyLineList/route";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
 const DEFAULT_LINE = "15A";
+const numberOfSelections = 5; // Number of line selections, should be more than 1
+const colors = ["#ec407a", "#2979ff", "#ffab00", "#8d6e63", "#d500f9"];
 
 const getLineVehiclePosition = async (lineCode: string | null) => {
   try {
@@ -63,20 +67,22 @@ const getLineList = async (): Promise<LineList> => {
 export default function Home() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const [vehiclePositions, setVehiclePositions] = useState<VehiclePosition[]>(
-    []
-  );
+  const [vehiclePositions, setVehiclePositions] = useState<VehiclePosition[][]>(
+    [[]]
+  ); // :(  fix this bro (it can be better)
   const [lineList, setLineList] = useState<LineList>([]);
-  const [selectedLine, setSelectedLine] = useState<Line>({
-    HAT_UZUNLUGU: 0,
-    SEFER_SURESI: 0,
-    SHATADI: "Hat Adı",
-    SHATKODU: "",
-    TARIFE: "0",
-  });
+  const [selectedLines, setSelectedLines] = useState<Line[]>([
+    {
+      HAT_UZUNLUGU: 0,
+      SEFER_SURESI: 0,
+      SHATADI: "Hat Adı",
+      SHATKODU: "",
+      TARIFE: "0",
+    },
+  ]);
   const [loading, setLoading] = useState(false);
 
-  // Initialize map
+  // Initialize map and geolocate control and set first selection enabled
   useEffect(() => {
     mapboxgl.accessToken =
       "pk.eyJ1IjoiaGFydW4tYmFrbGFuIiwiYSI6ImNtM3E2NDY0bjBsa28ya3NhMnM0bWpqNTYifQ.DB6xtdb0Q0HAYDW3vYkmng";
@@ -123,7 +129,7 @@ export default function Home() {
       // Set default line after getting the line list
       const defaultLine = lines.find((line) => line.SHATKODU === DEFAULT_LINE);
       if (defaultLine) {
-        setSelectedLine(defaultLine);
+        setSelectedLines([defaultLine]);
       }
     };
 
@@ -133,19 +139,29 @@ export default function Home() {
   // Fetch vehicle positions when selected line changes
   useEffect(() => {
     const fetchVehiclePositions = async () => {
-      if (selectedLine && selectedLine.SHATKODU) {
-        setLoading(true);
-        try {
-          const data = await getLineVehiclePosition(selectedLine.SHATKODU);
-          setVehiclePositions(data || []);
-        } finally {
-          setLoading(false);
+      const newVehiclePositions: VehiclePosition[][] = new Array(
+        selectedLines.length
+      ).fill([]);
+      for (let i = 0; i < numberOfSelections; i++) {
+        if (selectedLines[i] && selectedLines[i].SHATKODU) {
+          setLoading(true);
+          try {
+            const data = await getLineVehiclePosition(
+              selectedLines[i].SHATKODU
+            );
+            newVehiclePositions[i] = data;
+          } catch (error) {
+            console.log(error);
+          } finally {
+            setLoading(false);
+          }
         }
       }
+      setVehiclePositions(newVehiclePositions);
     };
 
     fetchVehiclePositions();
-  }, [selectedLine]);
+  }, [selectedLines]);
 
   // Update markers when vehicle positions change
   useEffect(() => {
@@ -153,42 +169,38 @@ export default function Home() {
       const existingMarkers = document.querySelectorAll(".vehicle-marker");
       existingMarkers.forEach((marker) => marker.remove()); // Remove existing markers
 
-      vehiclePositions.forEach((vehicle) => {
-        const { enlem: lat, boylam: lng } = vehicle;
-        const markerElement = document.createElement("div");
-        const icon = createRoot(markerElement);
-        icon.render(
-          <DirectionsBusIcon sx={{ color: pink.A400, fontSize: 32 }} />
-        );
+      vehiclePositions.forEach((vehicleList, index) => {
+        vehicleList.forEach((vehicle) => {
+          const { enlem: lat, boylam: lng } = vehicle;
+          const markerElement = document.createElement("div");
+          const icon = createRoot(markerElement);
+          icon.render(
+            <DirectionsBusIcon sx={{ color: colors[index], fontSize: 32 }} />
+          );
 
-        new Marker({
-          className: "vehicle-marker", // oh yeah
-          element: markerElement,
-        })
-          .setLngLat([parseFloat(lng), parseFloat(lat)])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>Yon: ${vehicle.yon}</h3>
+          new Marker({
+            className: "vehicle-marker", // oh yeah
+            element: markerElement,
+          })
+            .setLngLat([parseFloat(lng), parseFloat(lat)])
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 }).setHTML(
+                `<h3>Yon: ${vehicle.yon}</h3>
                 <h3>Son konum zamani: ${vehicle.son_konum_zamani}</h3>
                 <h3>Yakin durak kodu: ${vehicle.yakinDurakKodu}</h3>
                 <h3>Hat ad: ${vehicle.hatad}</h3>
                 <h3>Hat kodu: ${vehicle.hatkodu}</h3>
                 <h3>Guzergah kodu: ${vehicle.guzergahkodu}</h3>`
+              )
             )
-          )
-          .addTo(mapRef.current!);
+            .addTo(mapRef.current!);
+        });
       });
     }
   }, [vehiclePositions]);
 
   const handleRefreshClick = () => {
-    if (selectedLine) {
-      setLoading(true);
-      getLineVehiclePosition(selectedLine.SHATKODU).then((data) => {
-        setVehiclePositions(data);
-        setLoading(false);
-      });
-    }
+    setSelectedLines([...selectedLines]);
   };
 
   return (
@@ -228,43 +240,97 @@ export default function Home() {
           }}
         />
       )}
-      <Autocomplete
-        className="line-select"
-        disablePortal
-        loading={loading}
-        options={lineList}
-        getOptionLabel={(option: Line) => option.SHATKODU}
-        isOptionEqualToValue={(option: Line, value: Line) =>
-          option.SHATKODU === value.SHATKODU
+      <div className="selections">
+        {
+          // Render line selections
+          selectedLines.map((line, index) => (
+            <div className="selection" key={index}>
+              <RemoveRoundedIcon
+                sx={{
+                  zIndex: 2,
+                  right: 24,
+                  bottom: 24,
+                  color: "white",
+                  borderRadius: "50%",
+                  backgroundColor: colors[index],
+                  boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.5)",
+                }}
+                onClick={() => {
+                  setSelectedLines(
+                    selectedLines.filter((line, idx) => idx != index)
+                  );
+                }}
+              />
+              <Autocomplete
+                className="line-select"
+                disablePortal
+                loading={loading}
+                options={lineList}
+                getOptionLabel={(option: Line) => option.SHATKODU}
+                isOptionEqualToValue={(option: Line, value: Line) =>
+                  option.SHATKODU === value.SHATKODU
+                }
+                disableClearable={true}
+                value={line}
+                onChange={(event, value: Line) => {
+                  const newSelectedLines = [...selectedLines];
+                  newSelectedLines[index] = value;
+                  setSelectedLines(newSelectedLines);
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Hat Kodu"
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        color: "#000",
+                        fontFamily: "monospace",
+                        fontWeight: "bold",
+                        paddingY: "1px",
+                        "& .MuiOutlinedInput-notchedOutline": {
+                          borderColor: colors[index],
+                          borderWidth: "2px",
+                          boxShadow: "0 0 2px 0 rgba(0, 0, 0, 0.5)",
+                        },
+                      },
+                      "& .MuiInputLabel-outlined": {
+                        color: "#000",
+                        fontWeight: "bold",
+                      },
+                    }}
+                  />
+                )}
+              />
+            </div>
+          ))
         }
-        disableClearable={true}
-        value={selectedLine}
-        onChange={(event, value: Line) => {
-          setSelectedLine(value);
-        }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Hat Kodu"
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                color: "#000",
-                fontFamily: "monospace",
-                fontWeight: "bold",
-                paddingY: "1px",
-                "& .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "#ec407a",
-                  borderWidth: "2px",
+        <AddRoundedIcon
+          sx={{
+            zIndex: 1,
+            color: "white",
+            fontSize: 40,
+            textShadow: 3,
+            cursor: "pointer",
+            borderRadius: "20%",
+            boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.5)",
+            backgroundColor: "#000",
+          }}
+          onClick={() => {
+            if (selectedLines.length < numberOfSelections) {
+              setSelectedLines([
+                ...selectedLines,
+                {
+                  HAT_UZUNLUGU: 0,
+                  SEFER_SURESI: 0,
+                  SHATADI: "Hat Adı",
+                  SHATKODU: "",
+                  TARIFE: "0",
                 },
-              },
-              "& .MuiInputLabel-outlined": {
-                color: "#000",
-                fontWeight: "bold",
-              },
-            }}
-          />
-        )}
-      />
+              ]);
+            }
+          }}
+        />
+      </div>
       <div id="map-container" ref={mapContainerRef} />
     </>
   );

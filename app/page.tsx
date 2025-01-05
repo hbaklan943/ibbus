@@ -11,14 +11,12 @@ import mapboxgl, { LngLatLike } from "mapbox-gl";
 import { VehiclePosition } from "./api/api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
-import { pink } from "@mui/material/colors";
 import { LineList, Line } from "./api/proxyLineList/route";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
-const DEFAULT_LINE = "15A";
 const numberOfSelections = 5; // Number of line selections, should be more than 1
 const colors = ["#ec407a", "#2979ff", "#ffab00", "#8d6e63", "#d500f9"];
 
@@ -66,18 +64,23 @@ const getLineList = async (): Promise<LineList> => {
 
 // if local storage has saved lines set them
 const getInitialselectedLines = (): Line[] => {
-  return JSON.parse(
-    localStorage.getItem("selectedLines") ||
-      JSON.stringify([
-        {
-          HAT_UZUNLUGU: 0,
-          SEFER_SURESI: 0,
-          SHATADI: "Hat Adı",
-          SHATKODU: "",
-          TARIFE: "0",
-        },
-      ])
-  ) as Line[];
+  const defaultSelectedLines = [
+    {
+      HAT_UZUNLUGU: 0,
+      SEFER_SURESI: 0,
+      SHATADI: "Hat Adı",
+      SHATKODU: "",
+      TARIFE: "0",
+    },
+  ];
+  if (typeof window !== "undefined") {
+    return JSON.parse(
+      localStorage.getItem("selectedLines") ||
+        JSON.stringify(defaultSelectedLines) // dirty tricks
+    ) as Line[];
+  } else {
+    return defaultSelectedLines;
+  }
 };
 
 export default function Home() {
@@ -164,8 +167,10 @@ export default function Home() {
       setVehiclePositions(newVehiclePositions);
     };
 
-    localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
-    console.log("set key: ", JSON.stringify(selectedLines));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
+      console.log("set key: ", JSON.stringify(selectedLines));
+    }
 
     fetchVehiclePositions();
   }, [selectedLines]);

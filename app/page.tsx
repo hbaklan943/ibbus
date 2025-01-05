@@ -64,6 +64,22 @@ const getLineList = async (): Promise<LineList> => {
   }
 };
 
+// if local storage has saved lines set them
+const getInitialselectedLines = (): Line[] => {
+  return JSON.parse(
+    localStorage.getItem("selectedLines") ||
+      JSON.stringify([
+        {
+          HAT_UZUNLUGU: 0,
+          SEFER_SURESI: 0,
+          SHATADI: "Hat Adı",
+          SHATKODU: "",
+          TARIFE: "0",
+        },
+      ])
+  ) as Line[];
+};
+
 export default function Home() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -71,15 +87,9 @@ export default function Home() {
     [[]]
   ); // :(  fix this bro (it can be better)
   const [lineList, setLineList] = useState<LineList>([]);
-  const [selectedLines, setSelectedLines] = useState<Line[]>([
-    {
-      HAT_UZUNLUGU: 0,
-      SEFER_SURESI: 0,
-      SHATADI: "Hat Adı",
-      SHATKODU: "",
-      TARIFE: "0",
-    },
-  ]);
+  const [selectedLines, setSelectedLines] = useState<Line[]>(
+    getInitialselectedLines
+  );
   const [loading, setLoading] = useState(false);
 
   // Initialize map and geolocate control and set first selection enabled
@@ -120,23 +130,17 @@ export default function Home() {
     };
   }, []);
 
-  // Fetch line list and set default line
+  // Fetch line list
   useEffect(() => {
     const initializeData = async () => {
       const lines = await getLineList();
       setLineList(lines);
-
-      // Set default line after getting the line list
-      const defaultLine = lines.find((line) => line.SHATKODU === DEFAULT_LINE);
-      if (defaultLine) {
-        setSelectedLines([defaultLine]);
-      }
     };
-
     initializeData();
   }, []);
 
   // Fetch vehicle positions when selected line changes
+  // Also save selected Line to localstorage
   useEffect(() => {
     const fetchVehiclePositions = async () => {
       const newVehiclePositions: VehiclePosition[][] = new Array(
@@ -159,6 +163,9 @@ export default function Home() {
       }
       setVehiclePositions(newVehiclePositions);
     };
+
+    localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
+    console.log("set key: ", JSON.stringify(selectedLines));
 
     fetchVehiclePositions();
   }, [selectedLines]);

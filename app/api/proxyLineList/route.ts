@@ -81,6 +81,10 @@ export async function POST() {
 
     if (jsonResult) {
       const jsonData = JSON.parse(jsonResult);
+      // sort the lines by SHATKODU
+      jsonData.sort((a: Line, b: Line) => a.SHATKODU.localeCompare(b.SHATKODU));
+      //console.log("JSON Data:", jsonData);
+
       return NextResponse.json(jsonData);
     } else {
       console.error("No JSON data found in the SOAP response.");

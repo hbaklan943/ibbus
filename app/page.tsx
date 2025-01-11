@@ -175,7 +175,7 @@ export default function Home() {
 
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
-      console.log("set key: ", JSON.stringify(selectedLines));
+      //console.log("set key: ", JSON.stringify(selectedLines));
     }
 
     fetchVehiclePositions();
@@ -292,7 +292,7 @@ export default function Home() {
               borderRadius: "50%",
               backgroundColor: "#000",
               boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
-              fontSize: 45,
+              fontSize: 50,
               opacity: loading ? 0.5 : 1, // dim when loading
               cursor: loading ? "not-allowed" : "pointer",
             }}

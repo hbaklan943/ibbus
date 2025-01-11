@@ -200,7 +200,7 @@ export default function Home() {
       }
       handleTimer();
     }
-  }, [timeToRefresh]);
+  }, [timeToRefresh]); // TODO: add missing dependencie "handleRefreshClick"
 
   // Update markers when vehicle positions change
   useEffect(() => {

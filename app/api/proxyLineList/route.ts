@@ -55,7 +55,7 @@ export async function POST() {
     }
 
     const text = await response.text();
-    console.log("SOAP Response:", text);
+    //console.log("SOAP Response:", text);
 
     if (text.includes("<html>")) {
       console.error("Received an HTML error page instead of SOAP response");
@@ -72,7 +72,7 @@ export async function POST() {
     } as { [key: string]: boolean });
 
     const parsedXml = parser.parse(text);
-    console.log("Parsed XML:", parsedXml["soap:Envelope"]["soap:Body"]);
+    //console.log("Parsed XML:", parsedXml["soap:Envelope"]["soap:Body"]);
 
     const jsonResult =
       parsedXml["soap:Envelope"]["soap:Body"]["GetHat_jsonResponse"][

@@ -19,6 +19,8 @@ const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
 const numberOfSelections = 5; // Number of line selections, should be more than 1
 const colors = ["#ec407a", "#2979ff", "#ffab00", "#8d6e63", "#d500f9"];
+const TARGET_TIMER = 0;
+const INITIAL_TIMER = 25;
 
 const getLineVehiclePosition = async (lineCode: string | null) => {
   try {
@@ -36,6 +38,7 @@ const getLineVehiclePosition = async (lineCode: string | null) => {
     const data = await response.json();
     if (data.error) {
       console.error("Error fetching vehicle position:", data.error);
+      return [];
     }
     return data;
   } catch (error) {
@@ -94,6 +97,8 @@ export default function Home() {
     getInitialselectedLines
   );
   const [loading, setLoading] = useState(false);
+  const [timeToRefresh, setTimeToRefresh] = useState(INITIAL_TIMER);
+  const interval = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize map and geolocate control and set first selection enabled
   useEffect(() => {
@@ -165,6 +170,7 @@ export default function Home() {
         }
       }
       setVehiclePositions(newVehiclePositions);
+      setTimeToRefresh(INITIAL_TIMER); // Reset/Start/Trigger timer
     };
 
     if (typeof window !== "undefined") {
@@ -174,6 +180,27 @@ export default function Home() {
 
     fetchVehiclePositions();
   }, [selectedLines]);
+
+  useEffect(() => {
+    function handleTimer() {
+      interval.current = setInterval(() => {
+        setTimeToRefresh((time) => time - 1);
+      }, 1000);
+    }
+
+    if (timeToRefresh <= TARGET_TIMER && interval.current) {
+      // if time is up
+      handleRefreshClick();
+      clearInterval(interval.current);
+    }
+
+    if (timeToRefresh === INITIAL_TIMER) {
+      if (interval.current) {
+        clearInterval(interval.current); // to ensure only one interval is running, I'm pro
+      }
+      handleTimer();
+    }
+  }, [timeToRefresh]);
 
   // Update markers when vehicle positions change
   useEffect(() => {
@@ -217,29 +244,63 @@ export default function Home() {
 
   return (
     <>
-      <RefreshRounded
-        sx={{
-          position: "absolute",
-          zIndex: 1,
-          right: 24,
-          bottom: 24,
-          color: "white",
-          borderRadius: "50%",
-          backgroundColor: "#000",
-          boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
-          fontSize: 40,
-          opacity: loading ? 0.5 : 1, // dim when loading
-          cursor: loading ? "not-allowed" : "pointer",
-        }}
-        onClick={() => {
-          if (!loading) {
-            // prevent multiple clicks while loading
-            handleRefreshClick();
-          }
-        }}
-      />
+      {!loading && ( // TODO: Move this to a Seperate file(Component)
+        <div // Refresh button
+          style={{
+            position: "fixed",
+            zIndex: 3,
+            right: 36,
+            bottom: 36,
+            color: "white",
+            backgroundColor: "#000",
+            borderRadius: "50%",
+            boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+            padding: 8,
+          }}
+          onClick={() => {
+            if (!loading) {
+              // prevent multiple clicks while loading
+              handleRefreshClick();
+            }
+          }}
+        >
+          {selectedLines.length > 0 && selectedLines[0].SHATKODU && (
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+                zIndex: 2,
+                fontSize: 10,
+                textAlign: "center",
+                fontFamily: "monospace",
+                fontWeight: "bold",
+              }}
+            >
+              {timeToRefresh}
+            </div>
+          )}
+          <RefreshRounded
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 1,
+              color: "white",
+              borderRadius: "50%",
+              backgroundColor: "#000",
+              boxShadow: "0 0 10px 0 rgba(0, 0, 0, 0.5)",
+              fontSize: 45,
+              opacity: loading ? 0.5 : 1, // dim when loading
+              cursor: loading ? "not-allowed" : "pointer",
+            }}
+          />
+        </div>
+      )}
       {loading && (
-        <CircularProgress
+        <CircularProgress // TODO: Move this to the same component with refresh button and style it same
           sx={{
             position: "absolute",
             zIndex: 2,
@@ -320,7 +381,7 @@ export default function Home() {
           sx={{
             zIndex: 1,
             color: "white",
-            fontSize: 40,
+            fontSize: 45,
             textShadow: 3,
             cursor: "pointer",
             borderRadius: "20%",

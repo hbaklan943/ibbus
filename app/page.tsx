@@ -8,7 +8,7 @@ import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { useRef, useEffect, useState } from "react";
 import mapboxgl, { LngLatLike } from "mapbox-gl";
-import { VehiclePosition } from "./api/api";
+import { VehiclePosition } from "./api/proxyVehiclePosition/route";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
 import { LineList, Line } from "./api/proxyLineList/route";

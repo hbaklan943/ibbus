@@ -1,4 +1,4 @@
-import { DOMParser } from "xmldom";
+/* import { DOMParser } from "xmldom";
 
 type Announcement = {
   HATKODU: string;
@@ -109,3 +109,7 @@ async function getAnnouncementsJSON() {
 export { getLineVehiclePosition, getAnnouncementsJSON };
 
 export type { VehiclePosition, Announcement };
+ */
+
+// This file isn't being used, but it's a good example of how to fetch data from a SOAP API and parse the response.
+// not neccecery for this project

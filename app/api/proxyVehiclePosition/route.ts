@@ -1,6 +1,18 @@
 import { XMLParser } from "fast-xml-parser";
 import { NextResponse } from "next/server";
 
+export type VehiclePosition = {
+  kapino: string;
+  boylam: string;
+  enlem: string;
+  hatkodu: string;
+  guzergahkodu: string;
+  hatad: string;
+  yon: string;
+  son_konum_zamani: string;
+  yakinDurakKodu: string;
+};
+
 const apiVehiclePositionUrl =
   "https://api.ibb.gov.tr/iett/FiloDurum/SeferGerceklesme.asmx";
 

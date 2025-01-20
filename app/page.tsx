@@ -9,11 +9,13 @@ import Autocomplete from "@mui/material/Autocomplete";
 import { useRef, useEffect, useState } from "react";
 import mapboxgl, { LngLatLike } from "mapbox-gl";
 import { VehiclePosition } from "./api/proxyVehiclePosition/route";
+import { StopDetail } from "./api/proxyStopDetail/route";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Marker } from "mapbox-gl";
 import { LineList, Line } from "./api/proxyLineList/route";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
+import Image from "next/image";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
@@ -21,6 +23,28 @@ const numberOfSelections = 5; // Number of line selections, should be more than 
 const colors = ["#ec407a", "#2979ff", "#ffab00", "#8d6e63", "#d500f9"];
 const TARGET_TIMER = 0;
 const INITIAL_TIMER = 25;
+
+const getStopList = async (lineCode: string | null): Promise<StopDetail[]> => {
+  try {
+    if (!lineCode) {
+      console.error("Line code is required");
+      return [];
+    }
+    const response = await fetch(`/api/proxyStopDetail?hatNo=${lineCode}`, {
+      method: "POST",
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      console.error("Error fetching stop list:", data.error);
+      return [];
+    }
+    return data;
+  } catch (error) {
+    console.error("Error fetching stop list:", error);
+    return [];
+  }
+};
 
 const getLineVehiclePosition = async (lineCode: string | null) => {
   try {
@@ -92,6 +116,7 @@ export default function Home() {
   const [vehiclePositions, setVehiclePositions] = useState<VehiclePosition[][]>(
     [[]]
   ); // :(  fix this bro (it can be better)
+  const [stopList, setStopList] = useState<StopDetail[]>([]);
   const [lineList, setLineList] = useState<LineList>([]);
   const [selectedLines, setSelectedLines] = useState<Line[]>(
     getInitialselectedLines
@@ -150,6 +175,23 @@ export default function Home() {
   // Fetch vehicle positions when selected line changes
   // Also save selected Line to localstorage
   useEffect(() => {
+    const fetchStopList = async () => {
+      const newStopList: StopDetail[] = [];
+      for (let i = 0; i < numberOfSelections; i++) {
+        if (selectedLines[i] && selectedLines[i].SHATKODU) {
+          setLoading(true); // TODO: set loading state only once for this whole effect (i mean twice for true and false)
+          try {
+            const data = await getStopList(selectedLines[i].SHATKODU);
+            newStopList.push(...data);
+          } catch (error) {
+            console.log(error);
+          } finally {
+            setLoading(false);
+          }
+        }
+      }
+      setStopList(newStopList);
+    };
     const fetchVehiclePositions = async () => {
       const newVehiclePositions: VehiclePosition[][] = new Array(
         selectedLines.length
@@ -170,6 +212,7 @@ export default function Home() {
         }
       }
       setVehiclePositions(newVehiclePositions);
+
       setTimeToRefresh(INITIAL_TIMER); // Reset/Start/Trigger timer
     };
 
@@ -178,6 +221,7 @@ export default function Home() {
       //console.log("set key: ", JSON.stringify(selectedLines));
     }
 
+    fetchStopList();
     fetchVehiclePositions();
   }, [selectedLines]);
 
@@ -236,7 +280,44 @@ export default function Home() {
         });
       });
     }
-  }, [vehiclePositions]);
+    if (stopList && mapRef.current) {
+      // TODO: Bad performance, fix this(take a look at layers on mapbox docs)
+      const existingMarkers = document.querySelectorAll(".stop-marker");
+      existingMarkers.forEach((marker) => marker.remove()); // Remove existing markers
+
+      stopList.forEach((stop) => {
+        const { XKOORDINATI: lng, YKOORDINATI: lat } = stop;
+        const markerElement = document.createElement("div");
+        const icon = createRoot(markerElement);
+        icon.render(
+          <Image
+            src={"/stop_circles/pink_circle.svg"}
+            alt={""}
+            unoptimized
+            width={8}
+            height={8}
+          />
+        );
+
+        new Marker({
+          className: "stop-marker", // oh yeah
+          element: markerElement,
+        })
+          .setLngLat([parseFloat(lng.toString()), parseFloat(lat.toString())])
+          .setPopup(
+            new mapboxgl.Popup({ offset: 25 }).setHTML(
+              `<h3>Durak adi: ${stop.DURAKADI}</h3>
+              <h3>Durak kodu: ${stop.DURAKKODU}</h3>
+              <h3>Durak tipi: ${stop.DURAKTIPI}</h3>
+              <h3>Isletme bolge: ${stop.ISLETMEBOLGE}</h3>
+              <h3>Isletme alt bolge: ${stop.ISLETMEALTBOLGE}</h3>
+              <h3>Ilce adi: ${stop.ILCEADI}</h3>`
+            )
+          )
+          .addTo(mapRef.current!);
+      });
+    }
+  }, [vehiclePositions, stopList]);
 
   const handleRefreshClick = () => {
     setSelectedLines([...selectedLines]);

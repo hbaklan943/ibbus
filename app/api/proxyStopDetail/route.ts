@@ -6,22 +6,19 @@ import { NextResponse } from "next/server";
 
 const apiStopDetailUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx";
 
-const exampleStopDetail = {
-  HATKODU: "15BK",
-  YON: "D",
-  YON_ADI: "DERESEKİ",
-  SIRANO: 43,
-  DURAKKODU: 219602,
-  DURAKADI: "YALIKÖY",
-  XKOORDINATI: 29.087816,
-  YKOORDINATI: 41.136199,
-  DURAKTIPI: "CCMODERNDR",
-  ISLETMEBOLGE: "Anadolu1",
-  ISLETMEALTBOLGE: "Üsküdar",
-  ILCEADI: "Beykoz",
+export type StopDetail = {
+  HATKODU: string;
+  YON: string;
+  SIRANO: number;
+  DURAKKODU: number;
+  DURAKADI: string;
+  XKOORDINATI: number;
+  YKOORDINATI: number;
+  DURAKTIPI: string;
+  ISLETMEBOLGE: string;
+  ISLETMEALTBOLGE: string;
+  ILCEADI: string;
 };
-
-export type StopDetail = typeof exampleStopDetail;
 
 export async function POST(req: Request) {
   try {

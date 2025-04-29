@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     } as { [key: string]: boolean });
 
     const parsedXml = parser.parse(text);
-    console.log("parsedxml: ", parsedXml);
+    //console.log("parsedxml: ", parsedXml);
     /* `
         parsedxml:  {
       "?xml": { "@_version": "1.0", "@_encoding": "utf-8" },
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         "DurakDetay_GYY_wYonAdiResult"
       ]["NewDataSet"]["Table"];
 
-    console.log("json result: ", jsonResult[0]);
+    //console.log("json result: ", jsonResult[0]);
 
     if (jsonResult) {
       //const jsonData = JSON.parse(jsonResult);

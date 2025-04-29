@@ -15,7 +15,6 @@ import { Marker } from "mapbox-gl";
 import { LineList, Line } from "./api/proxyLineList/route";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
-import Image from "next/image";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
@@ -100,12 +99,10 @@ const getInitialselectedLines = (): Line[] => {
       TARIFE: "0",
     },
   ];
-  if (typeof window !== "undefined") {
-    return JSON.parse(
-      localStorage.getItem("selectedLines") ||
-        JSON.stringify(defaultSelectedLines) // dirty tricks
-    ) as Line[];
-  } else {
+  try {
+    const savedLines = localStorage.getItem("selectedLines");
+    return savedLines ? JSON.parse(savedLines) : defaultSelectedLines;
+  } catch {
     return defaultSelectedLines;
   }
 };
@@ -118,12 +115,24 @@ export default function Home() {
   ); // :(  fix this bro (it can be better)
   const [stopList, setStopList] = useState<StopDetail[]>([]);
   const [lineList, setLineList] = useState<LineList>([]);
-  const [selectedLines, setSelectedLines] = useState<Line[]>(
-    getInitialselectedLines
-  );
+  const [selectedLines, setSelectedLines] = useState<Line[]>([]);
   const [loading, setLoading] = useState(false);
   const [timeToRefresh, setTimeToRefresh] = useState(INITIAL_TIMER);
   const interval = useRef<NodeJS.Timeout | null>(null);
+  const vehicleMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const stopMarkersRef = useRef<mapboxgl.Marker[]>([]);
+
+  // Initialize selected lines from localStorage
+  useEffect(() => {
+    setSelectedLines(getInitialselectedLines());
+  }, []);
+
+  // Save selected lines to localStorage
+  useEffect(() => {
+    if (selectedLines.length > 0) {
+      localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
+    }
+  }, [selectedLines]);
 
   // Initialize map and geolocate control and set first selection enabled
   useEffect(() => {
@@ -179,14 +188,11 @@ export default function Home() {
       const newStopList: StopDetail[] = [];
       for (let i = 0; i < numberOfSelections; i++) {
         if (selectedLines[i] && selectedLines[i].SHATKODU) {
-          setLoading(true); // TODO: set loading state only once for this whole effect (i mean twice for true and false)
           try {
             const data = await getStopList(selectedLines[i].SHATKODU);
             newStopList.push(...data);
           } catch (error) {
             console.log(error);
-          } finally {
-            setLoading(false);
           }
         }
       }
@@ -198,7 +204,6 @@ export default function Home() {
       ).fill([]);
       for (let i = 0; i < numberOfSelections; i++) {
         if (selectedLines[i] && selectedLines[i].SHATKODU) {
-          setLoading(true);
           try {
             const data = await getLineVehiclePosition(
               selectedLines[i].SHATKODU
@@ -206,23 +211,23 @@ export default function Home() {
             newVehiclePositions[i] = data;
           } catch (error) {
             console.log(error);
-          } finally {
-            setLoading(false);
           }
         }
       }
       setVehiclePositions(newVehiclePositions);
-
       setTimeToRefresh(INITIAL_TIMER); // Reset/Start/Trigger timer
     };
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
-      //console.log("set key: ", JSON.stringify(selectedLines));
-    }
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        await Promise.all([fetchStopList(), fetchVehiclePositions()]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    fetchStopList();
-    fetchVehiclePositions();
+    fetchData();
   }, [selectedLines]);
 
   useEffect(() => {
@@ -249,20 +254,20 @@ export default function Home() {
   // Update markers when vehicle positions change
   useEffect(() => {
     if (vehiclePositions && mapRef.current) {
-      const existingMarkers = document.querySelectorAll(".vehicle-marker");
-      existingMarkers.forEach((marker) => marker.remove()); // Remove existing markers
+      // Clean up existing markers
+      vehicleMarkersRef.current.forEach((marker) => marker.remove());
+      vehicleMarkersRef.current = [];
 
       vehiclePositions.forEach((vehicleList, index) => {
         vehicleList.forEach((vehicle) => {
           const { enlem: lat, boylam: lng } = vehicle;
           const markerElement = document.createElement("div");
-          const icon = createRoot(markerElement);
-          icon.render(
-            <DirectionsBusIcon sx={{ color: colors[index], fontSize: 32 }} />
-          );
+          markerElement.innerHTML = `<svg viewBox="0 0 24 24" style="color: ${colors[index]}; width: 32px; height: 32px;">
+            <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3 1.5c-.83 0-1.5-.67-1.5-1.5S6.17 14.5 7 14.5s1.5.67 1.5 1.5S7.83 17.5 7 17.5zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5.5z" fill="currentColor"/>
+          </svg>`;
 
-          new Marker({
-            className: "vehicle-marker", // oh yeah
+          const marker = new mapboxgl.Marker({
+            className: "vehicle-marker",
             element: markerElement,
           })
             .setLngLat([parseFloat(lng), parseFloat(lat)])
@@ -277,50 +282,77 @@ export default function Home() {
               )
             )
             .addTo(mapRef.current!);
+
+          vehicleMarkersRef.current.push(marker);
         });
       });
     }
+
+    // Cleanup function
+    return () => {
+      vehicleMarkersRef.current.forEach((marker) => marker.remove());
+      vehicleMarkersRef.current = [];
+    };
+  }, [vehiclePositions]);
+
+  // Update stop markers when stop list change
+  useEffect(() => {
     if (stopList && mapRef.current) {
-      // TODO: Bad performance, fix this(take a look at layers on mapbox docs)
-      const existingMarkers = document.querySelectorAll(".stop-marker");
-      existingMarkers.forEach((marker) => marker.remove()); // Remove existing markers
+      // Remove existing stop markers
+      stopMarkersRef.current.forEach((marker) => marker.remove());
+      stopMarkersRef.current = [];
 
       stopList.forEach((stop) => {
         const { XKOORDINATI: lng, YKOORDINATI: lat } = stop;
         const markerElement = document.createElement("div");
-        const icon = createRoot(markerElement);
-        icon.render(
-          <Image
-            src={"/stop_circles/pink_circle.svg"}
-            alt={""}
-            unoptimized
-            width={8}
-            height={8}
-          />
-        );
+        markerElement.innerHTML = `<img src="/stop_circles/pink_circle.png" alt="" width="8" height="8" />`;
 
-        new Marker({
-          className: "stop-marker", // oh yeah
+        const marker = new mapboxgl.Marker({
+          className: "stop-marker",
           element: markerElement,
         })
           .setLngLat([parseFloat(lng.toString()), parseFloat(lat.toString())])
           .setPopup(
             new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>Durak adi: ${stop.DURAKADI}</h3>
-              <h3>Durak kodu: ${stop.DURAKKODU}</h3>
-              <h3>Durak tipi: ${stop.DURAKTIPI}</h3>
-              <h3>Isletme bolge: ${stop.ISLETMEBOLGE}</h3>
-              <h3>Isletme alt bolge: ${stop.ISLETMEALTBOLGE}</h3>
-              <h3>Ilce adi: ${stop.ILCEADI}</h3>`
+              `<h3>Durak adi: ${stop.DURAKADI}</h3>`
             )
           )
           .addTo(mapRef.current!);
+
+        stopMarkersRef.current.push(marker);
       });
     }
-  }, [vehiclePositions, stopList]);
 
-  const handleRefreshClick = () => {
-    setSelectedLines([...selectedLines]);
+    // Cleanup function
+    return () => {
+      stopMarkersRef.current.forEach((marker) => marker.remove());
+      stopMarkersRef.current = [];
+    };
+  }, [stopList]);
+
+  const handleRefreshClick = async () => {
+    setLoading(true);
+    try {
+      const newVehiclePositions: VehiclePosition[][] = new Array(
+        selectedLines.length
+      ).fill([]);
+      for (let i = 0; i < numberOfSelections; i++) {
+        if (selectedLines[i] && selectedLines[i].SHATKODU) {
+          try {
+            const data = await getLineVehiclePosition(
+              selectedLines[i].SHATKODU
+            );
+            newVehiclePositions[i] = data;
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      }
+      setVehiclePositions(newVehiclePositions);
+      setTimeToRefresh(INITIAL_TIMER);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

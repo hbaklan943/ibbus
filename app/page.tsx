@@ -312,11 +312,6 @@ export default function Home() {
           element: markerElement,
         })
           .setLngLat([parseFloat(lng.toString()), parseFloat(lat.toString())])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-              `<h3>Durak adi: ${stop.DURAKADI}</h3>`
-            )
-          )
           .addTo(mapRef.current!);
 
         stopMarkersRef.current.push(marker);

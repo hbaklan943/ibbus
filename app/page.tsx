@@ -1,7 +1,5 @@
 "use client";
 
-import { createRoot } from "react-dom/client";
-import DirectionsBusIcon from "@mui/icons-material/DirectionsBus";
 import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
@@ -11,7 +9,6 @@ import mapboxgl, { LngLatLike } from "mapbox-gl";
 import { VehiclePosition } from "./api/proxyVehiclePosition/route";
 import { StopDetail } from "./api/proxyStopDetail/route";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { Marker } from "mapbox-gl";
 import { LineList, Line } from "./api/proxyLineList/route";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";

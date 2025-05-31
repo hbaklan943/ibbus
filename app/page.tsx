@@ -178,6 +178,31 @@ export default function Home() {
     initializeData();
   }, []);
 
+  const handleRefreshClick = async () => {
+    setLoading(true);
+    try {
+      const newVehiclePositions: VehiclePosition[][] = new Array(
+        selectedLines.length
+      ).fill([]);
+      for (let i = 0; i < numberOfSelections; i++) {
+        if (selectedLines[i] && selectedLines[i].SHATKODU) {
+          try {
+            const data = await getLineVehiclePosition(
+              selectedLines[i].SHATKODU
+            );
+            newVehiclePositions[i] = data;
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      }
+      setVehiclePositions(newVehiclePositions);
+      setTimeToRefresh(INITIAL_TIMER);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch vehicle positions when selected line changes
   // Also save selected Line to localstorage
   useEffect(() => {
@@ -246,7 +271,7 @@ export default function Home() {
       }
       handleTimer();
     }
-  }, [timeToRefresh]); // TODO: add missing dependencie "handleRefreshClick"
+  }, [timeToRefresh, handleRefreshClick]); // TODO: add missing dependencie "handleRefreshClick"
 
   // Update markers when vehicle positions change
   useEffect(() => {
@@ -322,30 +347,7 @@ export default function Home() {
     };
   }, [stopList]);
 
-  const handleRefreshClick = async () => {
-    setLoading(true);
-    try {
-      const newVehiclePositions: VehiclePosition[][] = new Array(
-        selectedLines.length
-      ).fill([]);
-      for (let i = 0; i < numberOfSelections; i++) {
-        if (selectedLines[i] && selectedLines[i].SHATKODU) {
-          try {
-            const data = await getLineVehiclePosition(
-              selectedLines[i].SHATKODU
-            );
-            newVehiclePositions[i] = data;
-          } catch (error) {
-            console.log(error);
-          }
-        }
-      }
-      setVehiclePositions(newVehiclePositions);
-      setTimeToRefresh(INITIAL_TIMER);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <>

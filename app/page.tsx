@@ -4,7 +4,7 @@ import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import mapboxgl, { LngLatLike } from "mapbox-gl";
 import { VehiclePosition } from "./api/proxyVehiclePosition/route";
 import { StopDetail } from "./api/proxyStopDetail/route";
@@ -178,7 +178,7 @@ export default function Home() {
     initializeData();
   }, []);
 
-  const handleRefreshClick = async () => {
+  const handleRefreshClick = useCallback(async () => {
     setLoading(true);
     try {
       const newVehiclePositions: VehiclePosition[][] = new Array(
@@ -201,7 +201,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedLines]);
 
   // Fetch vehicle positions when selected line changes
   // Also save selected Line to localstorage

@@ -4,12 +4,12 @@ import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import mapboxgl, { LngLatLike } from "mapbox-gl";
 import { VehiclePosition } from "./api/proxyVehiclePosition/route";
 import { StopDetail } from "./api/proxyStopDetail/route";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { LineList, Line } from "./api/proxyLineList/route";
+import { Line, LineList } from "./api/proxyLineList/route";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
 
@@ -17,6 +17,7 @@ const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
 const numberOfSelections = 5; // Number of line selections, should be more than 1
 const colors = ["#ec407a", "#2979ff", "#ffab00", "#8d6e63", "#d500f9"];
+const colorNames = ["pink", "blue", "yellow", "brown", "purple"]; // for stop markers
 const TARGET_TIMER = 0;
 const INITIAL_TIMER = 25;
 
@@ -52,7 +53,7 @@ const getLineVehiclePosition = async (lineCode: string | null) => {
       `/api/proxyVehiclePosition?hatNo=${lineCode}`,
       {
         method: "POST",
-      }
+      },
     );
 
     const data = await response.json();
@@ -108,9 +109,9 @@ export default function Home() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [vehiclePositions, setVehiclePositions] = useState<VehiclePosition[][]>(
-    [[]]
+    [[]],
   ); // :(  fix this bro (it can be better)
-  const [stopList, setStopList] = useState<StopDetail[]>([]);
+  const [stopList, setStopList] = useState<StopDetail[][]>([]);
   const [lineList, setLineList] = useState<LineList>([]);
   const [selectedLines, setSelectedLines] = useState<Line[]>([]);
   const [loading, setLoading] = useState(false);
@@ -182,13 +183,13 @@ export default function Home() {
     setLoading(true);
     try {
       const newVehiclePositions: VehiclePosition[][] = new Array(
-        selectedLines.length
+        selectedLines.length,
       ).fill([]);
       for (let i = 0; i < numberOfSelections; i++) {
         if (selectedLines[i] && selectedLines[i].SHATKODU) {
           try {
             const data = await getLineVehiclePosition(
-              selectedLines[i].SHATKODU
+              selectedLines[i].SHATKODU,
             );
             newVehiclePositions[i] = data;
           } catch (error) {
@@ -207,14 +208,19 @@ export default function Home() {
   // Also save selected Line to localstorage
   useEffect(() => {
     const fetchStopList = async () => {
-      const newStopList: StopDetail[] = [];
+      const newStopList: StopDetail[][] = new Array(numberOfSelections).fill(
+        [],
+      );
       for (let i = 0; i < numberOfSelections; i++) {
         if (selectedLines[i] && selectedLines[i].SHATKODU) {
           try {
-            const data = await getStopList(selectedLines[i].SHATKODU);
-            newStopList.push(...data);
+            const stops = await getStopList(selectedLines[i].SHATKODU);
+            newStopList[i] = stops;
           } catch (error) {
-            console.log(error);
+            console.error(
+              `Failed to fetch stops for line ${selectedLines[i].SHATKODU}`,
+              error,
+            );
           }
         }
       }
@@ -222,13 +228,13 @@ export default function Home() {
     };
     const fetchVehiclePositions = async () => {
       const newVehiclePositions: VehiclePosition[][] = new Array(
-        selectedLines.length
+        selectedLines.length,
       ).fill([]);
       for (let i = 0; i < numberOfSelections; i++) {
         if (selectedLines[i] && selectedLines[i].SHATKODU) {
           try {
             const data = await getLineVehiclePosition(
-              selectedLines[i].SHATKODU
+              selectedLines[i].SHATKODU,
             );
             newVehiclePositions[i] = data;
           } catch (error) {
@@ -284,7 +290,9 @@ export default function Home() {
         vehicleList.forEach((vehicle) => {
           const { enlem: lat, boylam: lng } = vehicle;
           const markerElement = document.createElement("div");
-          markerElement.innerHTML = `<svg viewBox="0 0 24 24" style="color: ${colors[index]}; width: 32px; height: 32px;">
+          markerElement.innerHTML = `<svg viewBox="0 0 24 24" style="color: ${
+            colors[index]
+          }; width: 32px; height: 32px;">
             <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3 1.5c-.83 0-1.5-.67-1.5-1.5S6.17 14.5 7 14.5s1.5.67 1.5 1.5S7.83 17.5 7 17.5zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5.5z" fill="currentColor"/>
           </svg>`;
 
@@ -300,8 +308,8 @@ export default function Home() {
                 <h3>Yakin durak kodu: ${vehicle.yakinDurakKodu}</h3>
                 <h3>Hat ad: ${vehicle.hatad}</h3>
                 <h3>Hat kodu: ${vehicle.hatkodu}</h3>
-                <h3>Guzergah kodu: ${vehicle.guzergahkodu}</h3>`
-              )
+                <h3>Guzergah kodu: ${vehicle.guzergahkodu}</h3>`,
+              ),
             )
             .addTo(mapRef.current!);
 
@@ -324,19 +332,23 @@ export default function Home() {
       stopMarkersRef.current.forEach((marker) => marker.remove());
       stopMarkersRef.current = [];
 
-      stopList.forEach((stop) => {
-        const { XKOORDINATI: lng, YKOORDINATI: lat } = stop;
-        const markerElement = document.createElement("div");
-        markerElement.innerHTML = `<img src="/stop_circles/pink_circle.png" alt="" width="8" height="8" />`;
+      stopList.forEach((stops, lineIndex) => {
+        stops.forEach((stop) => {
+          const { XKOORDINATI: lng, YKOORDINATI: lat } = stop;
+          const markerElement = document.createElement("div");
+          markerElement.innerHTML = `<img src="/stop_circles/${
+            colorNames[lineIndex]
+          }_circle.png" alt="" width="8" height="8" />`;
 
-        const marker = new mapboxgl.Marker({
-          className: "stop-marker",
-          element: markerElement,
-        })
-          .setLngLat([parseFloat(lng.toString()), parseFloat(lat.toString())])
-          .addTo(mapRef.current!);
+          const marker = new mapboxgl.Marker({
+            className: "stop-marker",
+            element: markerElement,
+          })
+            .setLngLat([parseFloat(lng.toString()), parseFloat(lat.toString())])
+            .addTo(mapRef.current!);
 
-        stopMarkersRef.current.push(marker);
+          stopMarkersRef.current.push(marker);
+        });
       });
     }
 
@@ -346,8 +358,6 @@ export default function Home() {
       stopMarkersRef.current = [];
     };
   }, [stopList]);
-
-
 
   return (
     <>
@@ -437,7 +447,9 @@ export default function Home() {
                 }}
                 onClick={() => {
                   setSelectedLines(
-                    selectedLines.filter((line, idx) => idx != index)
+                    selectedLines.filter((line, idx) =>
+                      idx != index
+                    ),
                   );
                 }}
               />
@@ -448,16 +460,15 @@ export default function Home() {
                 options={lineList}
                 getOptionLabel={(option: Line) => option.SHATKODU}
                 isOptionEqualToValue={(option: Line, value: Line) =>
-                  option.SHATKODU === value.SHATKODU
-                }
+                  option.SHATKODU === value.SHATKODU}
                 disableClearable={true}
                 value={line}
-                onChange={(event, value: Line) => {
+                onChange={(_event: any, value: Line) => {
                   const newSelectedLines = [...selectedLines];
                   newSelectedLines[index] = value;
                   setSelectedLines(newSelectedLines);
                 }}
-                renderInput={(params) => (
+                renderInput={(params: any) => (
                   <TextField
                     {...params}
                     label="Hat Kodu"

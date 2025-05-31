@@ -71,14 +71,14 @@ h3 {
 }
 
 .line-select {
-  width: 110px;
+  width: 100px;
 }
 
 .selections {
   display: flex;
   flex-direction: column;
   position: absolute;
-  top: 50px;
+  top: 12px;
   right: 12px;
   width: 150px;
   z-index: 1;

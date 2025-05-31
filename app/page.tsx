@@ -12,6 +12,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { Line, LineList } from "./api/proxyLineList/route";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
+import AssistantDirectionIcon from "@mui/icons-material/AssistantDirection";
 
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
@@ -156,7 +157,7 @@ export default function Home() {
     });
 
     if (mapRef.current) {
-      mapRef.current.addControl(geolocate);
+      mapRef.current.addControl(geolocate, "top-left");
     }
 
     mapRef.current?.on("load", () => {
@@ -440,8 +441,22 @@ export default function Home() {
           // Render line selections
           selectedLines.map((line, index) => (
             <div className="selection" key={index}>
+              <AssistantDirectionIcon
+                sx={{
+                  fontSize: 30,
+                  zIndex: 2,
+                  left: 24,
+                  bottom: 24,
+                  color: "white",
+                  borderRadius: "50%",
+                  backgroundColor: colors[index],
+                  boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.5)",
+                }}
+                onClick={() => {}}
+              />
               <RemoveRoundedIcon
                 sx={{
+                  fontSize: 30,
                   zIndex: 2,
                   right: 24,
                   bottom: 24,
@@ -476,7 +491,6 @@ export default function Home() {
                 renderInput={(params: Parameters<typeof TextField>[0]) => (
                   <TextField
                     {...params}
-                    label="Hat Kodu"
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         color: "#000",

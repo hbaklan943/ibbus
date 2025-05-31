@@ -4,7 +4,7 @@ import RefreshRounded from "@mui/icons-material/RefreshRounded";
 import CircularProgress from "@mui/material/CircularProgress";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import mapboxgl, { LngLatLike } from "mapbox-gl";
 import { VehiclePosition } from "./api/proxyVehiclePosition/route";
 import { StopDetail } from "./api/proxyStopDetail/route";
@@ -468,12 +468,12 @@ export default function Home() {
                   option.SHATKODU === value.SHATKODU}
                 disableClearable={true}
                 value={line}
-                onChange={(_event: any, value: Line) => {
+                onChange={(_event: React.ChangeEvent<unknown>, value: Line) => {
                   const newSelectedLines = [...selectedLines];
                   newSelectedLines[index] = value;
                   setSelectedLines(newSelectedLines);
                 }}
-                renderInput={(params: any) => (
+                renderInput={(params: Parameters<typeof TextField>[0]) => (
                   <TextField
                     {...params}
                     label="Hat Kodu"

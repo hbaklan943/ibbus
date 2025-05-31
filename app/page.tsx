@@ -335,6 +335,11 @@ export default function Home() {
       stopList.forEach((stops, lineIndex) => {
         stops.forEach((stop) => {
           const { XKOORDINATI: lng, YKOORDINATI: lat } = stop;
+          const offset = 0.00002; // small offset to prevent marker overlap
+          // Adjust coordinates slightly to avoid overlap
+          const adjustedLng = parseFloat(lng.toString()) + offset * lineIndex;
+          const adjustedLat = parseFloat(lat.toString()) + offset * lineIndex;
+
           const markerElement = document.createElement("div");
           markerElement.innerHTML = `<img src="/stop_circles/${
             colorNames[lineIndex]
@@ -344,7 +349,7 @@ export default function Home() {
             className: "stop-marker",
             element: markerElement,
           })
-            .setLngLat([parseFloat(lng.toString()), parseFloat(lat.toString())])
+            .setLngLat([adjustedLng, adjustedLat])
             .addTo(mapRef.current!);
 
           stopMarkersRef.current.push(marker);

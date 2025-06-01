@@ -14,6 +14,8 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
 import AssistantDirectionIcon from "@mui/icons-material/AssistantDirection";
 
+import YonAdiDialog from "./components/YonAdiDialog";
+
 const INITIAL_CENTER: LngLatLike = [29.09639, 41.12451];
 const INITIAL_ZOOM = 11.1;
 const numberOfSelections = 5; // Number of line selections, should be more than 1
@@ -121,9 +123,43 @@ export default function Home() {
   const vehicleMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const stopMarkersRef = useRef<mapboxgl.Marker[]>([]);
 
+  const [selectedYonValues, setSelectedYonValues] = React.useState<string[]>(
+    [],
+  );
+  const [openYonDialogIndex, setOpenYonDialogIndex] = useState<number | null>(
+    null,
+  );
+
+  useEffect(() => {
+    console.log("selectedYonValues: ", selectedYonValues);
+  }, [selectedYonValues]);
+
+  useEffect(() => {
+    console.log("selectedLines: ", selectedLines);
+  }, [selectedLines]);
+
+  const handleClickOpenYonDialog = (index: number) => {
+    setOpenYonDialogIndex(index);
+  };
+
+  const handleCloseYonDialog = (
+    index: number,
+    selectedValue: string,
+  ) => {
+    setSelectedYonValues((prev) => {
+      const newValues = [...prev];
+      newValues[index] = selectedValue;
+      return newValues;
+    });
+    setOpenYonDialogIndex(null);
+  };
+
   // Initialize selected lines from localStorage
   useEffect(() => {
     setSelectedLines(getInitialselectedLines());
+    setSelectedYonValues(
+      getInitialselectedLines().map(() => ""),
+    ); // Initialize selectedYonValues with empty strings
   }, []);
 
   // Save selected lines to localStorage
@@ -289,32 +325,39 @@ export default function Home() {
 
       vehiclePositions.forEach((vehicleList, index) => {
         vehicleList.forEach((vehicle) => {
-          const { enlem: lat, boylam: lng } = vehicle;
-          const markerElement = document.createElement("div");
-          markerElement.innerHTML = `<svg viewBox="0 0 24 24" style="color: ${
-            colors[index]
-          }; width: 32px; height: 32px;">
+          if (
+            vehicle.yon == selectedYonValues[index] ||
+            selectedYonValues[index] == ""
+          ) {
+            // Only show markers for the selected direction or if no direction is selected
+
+            const { enlem: lat, boylam: lng } = vehicle;
+            const markerElement = document.createElement("div");
+            markerElement.innerHTML = `<svg viewBox="0 0 24 24" style="color: ${
+              colors[index]
+            }; width: 32px; height: 32px;">
             <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3 1.5c-.83 0-1.5-.67-1.5-1.5S6.17 14.5 7 14.5s1.5.67 1.5 1.5S7.83 17.5 7 17.5zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5.5z" fill="currentColor"/>
           </svg>`;
 
-          const marker = new mapboxgl.Marker({
-            className: "vehicle-marker",
-            element: markerElement,
-          })
-            .setLngLat([parseFloat(lng), parseFloat(lat)])
-            .setPopup(
-              new mapboxgl.Popup({ offset: 25 }).setHTML(
-                `<h3>Yon: ${vehicle.yon}</h3>
+            const marker = new mapboxgl.Marker({
+              className: "vehicle-marker",
+              element: markerElement,
+            })
+              .setLngLat([parseFloat(lng), parseFloat(lat)])
+              .setPopup(
+                new mapboxgl.Popup({ offset: 25 }).setHTML(
+                  `<h3>Yon: ${vehicle.yon}</h3>
                 <h3>Son konum zamani: ${vehicle.son_konum_zamani}</h3>
                 <h3>Yakin durak kodu: ${vehicle.yakinDurakKodu}</h3>
                 <h3>Hat ad: ${vehicle.hatad}</h3>
                 <h3>Hat kodu: ${vehicle.hatkodu}</h3>
                 <h3>Guzergah kodu: ${vehicle.guzergahkodu}</h3>`,
-              ),
-            )
-            .addTo(mapRef.current!);
+                ),
+              )
+              .addTo(mapRef.current!);
 
-          vehicleMarkersRef.current.push(marker);
+            vehicleMarkersRef.current.push(marker);
+          }
         });
       });
     }
@@ -324,7 +367,7 @@ export default function Home() {
       vehicleMarkersRef.current.forEach((marker) => marker.remove());
       vehicleMarkersRef.current = [];
     };
-  }, [vehiclePositions]);
+  }, [selectedYonValues, vehiclePositions]);
 
   // Update stop markers when stop list change
   useEffect(() => {
@@ -335,6 +378,14 @@ export default function Home() {
 
       stopList.forEach((stops, lineIndex) => {
         stops.forEach((stop) => {
+          if (
+            selectedYonValues[lineIndex] &&
+            stop.YON_ADI !== selectedYonValues[lineIndex] &&
+            selectedYonValues[lineIndex] !== ""
+          ) {
+            // Skip stops that don't match the selected direction
+            return;
+          }
           const { XKOORDINATI: lng, YKOORDINATI: lat } = stop;
           const offset = 0.00002; // small offset to prevent marker overlap
           // Adjust coordinates slightly to avoid overlap
@@ -363,7 +414,7 @@ export default function Home() {
       stopMarkersRef.current.forEach((marker) => marker.remove());
       stopMarkersRef.current = [];
     };
-  }, [stopList]);
+  }, [selectedYonValues, stopList]);
 
   return (
     <>
@@ -436,6 +487,15 @@ export default function Home() {
           }}
         />
       )}
+      {openYonDialogIndex !== null && (
+        <YonAdiDialog
+          selectedValue={selectedYonValues[openYonDialogIndex] || ""}
+          open={true}
+          onClose={handleCloseYonDialog}
+          index={openYonDialogIndex}
+          stopList={stopList[openYonDialogIndex] || []}
+        />
+      )}
       <div className="selections">
         {
           // Render line selections
@@ -452,8 +512,11 @@ export default function Home() {
                   backgroundColor: colors[index],
                   boxShadow: "0 0 5px 0 rgba(0, 0, 0, 0.5)",
                 }}
-                onClick={() => {}}
+                onClick={() => {
+                  handleClickOpenYonDialog(index);
+                }}
               />
+
               <RemoveRoundedIcon
                 sx={{
                   fontSize: 30,
@@ -471,6 +534,9 @@ export default function Home() {
                       idx != index
                     ),
                   );
+                  setSelectedYonValues(
+                    selectedYonValues.filter((_, idx) => idx != index),
+                  );
                 }}
               />
               <Autocomplete
@@ -487,6 +553,11 @@ export default function Home() {
                   const newSelectedLines = [...selectedLines];
                   newSelectedLines[index] = value;
                   setSelectedLines(newSelectedLines);
+                  setSelectedYonValues((prev) => {
+                    const newValues = [...prev];
+                    newValues[index] = ""; // Reset selected value for this line
+                    return newValues;
+                  });
                 }}
                 renderInput={(params: Parameters<typeof TextField>[0]) => (
                   <TextField
@@ -518,7 +589,7 @@ export default function Home() {
           sx={{
             zIndex: 1,
             color: "white",
-            fontSize: 45,
+            fontSize: 30,
             textShadow: 3,
             cursor: "pointer",
             borderRadius: "20%",
@@ -537,6 +608,7 @@ export default function Home() {
                   TARIFE: "0",
                 },
               ]);
+              setSelectedYonValues((prev) => [...prev, ""]);
             }
           }}
         />

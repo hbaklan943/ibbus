@@ -9,6 +9,7 @@ const apiStopDetailUrl = "https://api.ibb.gov.tr/iett/ibb/ibb.asmx";
 export type StopDetail = {
   HATKODU: string;
   YON: string;
+  YON_ADI: string;
   SIRANO: number;
   DURAKKODU: number;
   DURAKADI: string;

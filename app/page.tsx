@@ -108,6 +108,18 @@ const getInitialselectedLines = (): Line[] => {
   }
 };
 
+const getInitialSelectedYonValues = (): string[] => {
+  const defaultSelectedYonValues = [""];
+  try {
+    const savedYonValues = localStorage.getItem("selectedYonValues");
+    return savedYonValues
+      ? JSON.parse(savedYonValues)
+      : defaultSelectedYonValues;
+  } catch {
+    return defaultSelectedYonValues;
+  }
+};
+
 export default function Home() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -157,17 +169,19 @@ export default function Home() {
   // Initialize selected lines from localStorage
   useEffect(() => {
     setSelectedLines(getInitialselectedLines());
-    setSelectedYonValues(
-      getInitialselectedLines().map(() => ""),
-    ); // Initialize selectedYonValues with empty strings
+    setSelectedYonValues(getInitialSelectedYonValues());
   }, []);
 
   // Save selected lines to localStorage
   useEffect(() => {
     if (selectedLines.length > 0) {
       localStorage.setItem("selectedLines", JSON.stringify(selectedLines));
+      localStorage.setItem(
+        "selectedYonValues",
+        JSON.stringify(selectedYonValues),
+      );
     }
-  }, [selectedLines]);
+  }, [selectedLines, selectedYonValues]);
 
   // Initialize map and geolocate control and set first selection enabled
   useEffect(() => {
